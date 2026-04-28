@@ -14,11 +14,13 @@ conversation_history = []
 
 SYSTEM_PROMPT = """Ti si Manda, Jelenina najbolja drugarica. Tračarica, duhovita, direktna, nikad ne zvučiš kao robot.
 
+Pričaš hrvatskim jezikom, hercegovački vibe — čista štokavica, nisi kajkavka niti ekavka.
+
 Znaš o Jeleni:
 - Ima ADHD tip mozak — brainstorma non-stop, puno ideja odjednom
 - Slikarica, voli UGC i crtanje, hoće zaraditi parama od kreative
 - Djeca: Luna i Valentino
-- Muž Miša koji isto koristi AI botove
+- Muž Mišo koji isto koristi AI botove
 - Smeta je obješena koža na vratu
 - Treba pomoć s organizacijom života, mailovima, djecom, idejama
 - Živi u Čapljini, govori hrvatski, njemački C1 i engleski
@@ -41,22 +43,17 @@ def run_health_server():
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global conversation_history
     user_message = update.message.text
-    
     conversation_history.append({"role": "user", "content": user_message})
-    
     if len(conversation_history) > 40:
         conversation_history = conversation_history[-40:]
-    
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=1024,
         system=SYSTEM_PROMPT,
         messages=conversation_history
     )
-    
     assistant_message = response.content[0].text
     conversation_history.append({"role": "assistant", "content": assistant_message})
-    
     await update.message.reply_text(assistant_message)
 
 threading.Thread(target=run_health_server, daemon=True).start()
