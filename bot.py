@@ -1,14 +1,17 @@
 import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import anthropic
+from openai import OpenAI
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=OPENROUTER_API_KEY,
+)
 
 conversation_history = []
 
@@ -46,17 +49,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     conversation_history.append({"role": "user", "content": user_message})
     if len(conversation_history) > 40:
         conversation_history = conversation_history[-40:]
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        messages=conversation_history
+    
+    response = client.chat.completions.create(
+        model="deepseek/deepseek-chat",
+        messages=[{"role": "system", "content": SYSTEM_PROMPT}] + conversation_history
     )
-    assistant_message = response.content[0].text
+    
+    assistant_message = response.choices[0].message.content
     conversation_history.append({"role": "assistant", "content": assistant_message})
-    await update.message.reply_text(assistant_message)
-
-threading.Thread(target=run_health_server, daemon=True).start()
-app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-app.run_polling()
+    await
